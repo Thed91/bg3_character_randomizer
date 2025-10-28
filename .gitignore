@@ -1,0 +1,55 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+/build/
+ios/Pods/
+ios/Flutter/App.framework
+ios/Flutter/engine.framework
+ios/Flutter/flutter_assets/
+ios/.symlinks/
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+# Android
+/android/key.properties
+/android/.gradle/
+/android/app/build/
+/android/build/
+/android/gradle
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+/android/app/src/main/jniLibs/
+
+# Xcode
+*.hmap
+*.xccheckout
+*.xcscheme
+xcuserdata/
+# CocoaPods
+Pods/
+# Carthage
+Carthage/
+# fastlane
+fastlane/report.xml
+# رمز
+DerivedData/
