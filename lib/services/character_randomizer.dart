@@ -56,13 +56,19 @@ class CharacterRandomizer {
     return null;
   }
 
-  GeneratedCharacter generate({required String originCategory}) {
-    final raceData = generateRaceAndSubRace();
-    final classData = generateClassAndSubClass();
+  GeneratedCharacter generate({
+    required String originCategory,
+    required Set<String> frozenOptions,
+    GeneratedCharacter? currentCharacter,
+  }) {
+    final raceData = frozenOptions.contains('race') ? {'race': currentCharacter!.race, 'subRace': currentCharacter.subRace} : generateRaceAndSubRace();
+    final classData = frozenOptions.contains('class') ? {'charClass': currentCharacter!.charClass, 'subClass': currentCharacter.subClass} : generateClassAndSubClass();
     final selectedClass = classData['charClass']!;
 
     String finalOrigin;
-    if (originCategory == 'Готовый персонаж') {
+    if (frozenOptions.contains('origin')) {
+      finalOrigin = currentCharacter!.origin!;
+    } else if (originCategory == 'Готовый персонаж') {
       final premadeOrigins = data.origins.where((o) => o != 'Свой персонаж' && o != 'Тёмный соблазн').toList();
       finalOrigin = _selectRandom(premadeOrigins);
     } else {
@@ -74,12 +80,35 @@ class CharacterRandomizer {
       subRace: raceData['subRace']!,
       charClass: selectedClass,
       subClass: classData['subClass']!,
-      background: generateBackground(),
+      background: frozenOptions.contains('background') ? currentCharacter!.background : generateBackground(),
       origin: finalOrigin,
-      alignment: generateAlignment(),
-      deity: generateDeity(selectedClass),
-      warlockPact: generateWarlockPact(selectedClass),
-      fightingStyle: generateFightingStyle(selectedClass),
+      alignment: frozenOptions.contains('alignment') ? currentCharacter!.alignment : generateAlignment(),
+      deity: frozenOptions.contains('deity') ? currentCharacter!.deity : generateDeity(selectedClass),
+      warlockPact: frozenOptions.contains('warlockPact') ? currentCharacter!.warlockPact : generateWarlockPact(selectedClass),
+      fightingStyle: frozenOptions.contains('fightingStyle') ? currentCharacter!.fightingStyle : generateFightingStyle(selectedClass),
     );
+  }
+
+  GeneratedCharacter reroll(String option, GeneratedCharacter character) {
+    switch (option) {
+      case 'race':
+        final raceData = generateRaceAndSubRace();
+        return character.copyWith(race: raceData['race'], subRace: raceData['subRace']);
+      case 'class':
+        final classData = generateClassAndSubClass();
+        return character.copyWith(charClass: classData['charClass'], subClass: classData['subClass']);
+      case 'background':
+        return character.copyWith(background: generateBackground());
+      case 'alignment':
+        return character.copyWith(alignment: generateAlignment());
+      case 'deity':
+        return character.copyWith(deity: generateDeity(character.charClass));
+      case 'warlockPact':
+        return character.copyWith(warlockPact: generateWarlockPact(character.charClass));
+      case 'fightingStyle':
+        return character.copyWith(fightingStyle: generateFightingStyle(character.charClass));
+      default:
+        return character;
+    }
   }
 }

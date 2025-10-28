@@ -1,5 +1,6 @@
 import 'package:bg3cr/screens/bg3_randomizer_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,19 +20,19 @@ class MyApp extends StatelessWidget {
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFFD4AF37), // Gold accent
           secondary: Color(0xFF9E2A2B), // Red accent
-          background: Color(0xFF1A1A1A),
           surface: Color(0xFF2C2A26),
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF2C2A26),
-          foregroundColor: Color(0xFFEAE0D5),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF2C2A26),
+          foregroundColor: const Color(0xFFEAE0D5),
+          titleTextStyle: GoogleFonts.cinzel(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         cardTheme: CardThemeData(
           color: const Color(0xFF2C2A26),
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
-            side: BorderSide(color: const Color(0xFFD4AF37).withOpacity(0.5), width: 1),
+            side: const BorderSide(color: Color.fromRGBO(212, 175, 55, 0.5), width: 1),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -41,16 +42,19 @@ class MyApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            textStyle: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         textSelectionTheme: const TextSelectionThemeData(
           cursorColor: Color(0xFFD4AF37),
         ),
-        inputDecorationTheme: const InputDecorationTheme(
-          focusedBorder: OutlineInputBorder(
+        inputDecorationTheme: InputDecorationTheme(
+          focusedBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: Color(0xFFD4AF37)),
           ),
+          labelStyle: GoogleFonts.cinzel(color: Colors.grey[400]),
         ),
+        textTheme: GoogleFonts.cinzelTextTheme(ThemeData.dark().textTheme),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const Bg3RandomizerScreen(),

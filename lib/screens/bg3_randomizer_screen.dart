@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:bg3cr/services/character_randomizer.dart';
 import 'package:bg3cr/models/character_models.dart';
 import 'package:bg3cr/data/game_data.dart';
@@ -14,78 +15,39 @@ class _Bg3RandomizerScreenState extends State<Bg3RandomizerScreen> {
   final CharacterRandomizer _randomizer = CharacterRandomizer(allBg3Data);
   GeneratedCharacter? _currentCharacter;
   String _selectedOriginCategory = 'Свой персонаж';
+  final Set<String> _frozenOptions = {};
 
   void _rollCharacter() {
     setState(() {
-      _currentCharacter = _randomizer.generate(originCategory: _selectedOriginCategory);
+      _currentCharacter = _randomizer.generate(originCategory: _selectedOriginCategory, frozenOptions: _frozenOptions, currentCharacter: _currentCharacter);
     });
   }
 
-  void _rerollRace() {
-    if (_currentCharacter != null) {
-      final raceData = _randomizer.generateRaceAndSubRace();
-      setState(() {
-        _currentCharacter = _currentCharacter!.copyWith(
-          race: raceData['race'],
-          subRace: raceData['subRace'],
-        );
-      });
-    }
+  void _toggleFreeze(String option) {
+    setState(() {
+      if (_frozenOptions.contains(option)) {
+        _frozenOptions.remove(option);
+      } else {
+        _frozenOptions.add(option);
+      }
+    });
   }
 
-  void _rerollClass() {
-    if (_currentCharacter != null) {
-      final classData = _randomizer.generateClassAndSubClass();
-      setState(() {
-        _currentCharacter = _currentCharacter!.copyWith(
-          charClass: classData['charClass'],
-          subClass: classData['subClass'],
-          deity: _randomizer.generateDeity(classData['charClass']!),
-          warlockPact: _randomizer.generateWarlockPact(classData['charClass']!),
-          fightingStyle: _randomizer.generateFightingStyle(classData['charClass']!),
-        );
-      });
-    }
+  void _copyToClipboard() {
+    if (_currentCharacter == null) return;
+    final textToCopy = _currentCharacter.toString();
+    Clipboard.setData(ClipboardData(text: textToCopy)).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Персонаж скопирован в буфер обмена!')),
+      );
+    });
   }
 
-  void _rerollBackground() {
-    if (_currentCharacter != null) {
-      setState(() {
-        _currentCharacter = _currentCharacter!.copyWith(background: _randomizer.generateBackground());
-      });
-    }
-  }
-
-  void _rerollAlignment() {
-    if (_currentCharacter != null) {
-      setState(() {
-        _currentCharacter = _currentCharacter!.copyWith(alignment: _randomizer.generateAlignment());
-      });
-    }
-  }
-
-  void _rerollDeity() {
-    if (_currentCharacter != null) {
-      setState(() {
-        _currentCharacter = _currentCharacter!.copyWith(deity: _randomizer.generateDeity(_currentCharacter!.charClass));
-      });
-    }
-  }
-
-  void _rerollWarlockPact() {
-    if (_currentCharacter != null) {
-      setState(() {
-        _currentCharacter = _currentCharacter!.copyWith(warlockPact: _randomizer.generateWarlockPact(_currentCharacter!.charClass));
-      });
-    }
-  }
-
-  void _rerollFightingStyle() {
-    if (_currentCharacter != null) {
-      setState(() {
-        _currentCharacter = _currentCharacter!.copyWith(fightingStyle: _randomizer.generateFightingStyle(_currentCharacter!.charClass));
-      });
-    }
+  void _reroll(String option) {
+    if (_currentCharacter == null) return;
+    setState(() {
+      _currentCharacter = _randomizer.reroll(option, _currentCharacter!);
+    });
   }
 
   void _showDescription(String title, String? description) {
@@ -109,39 +71,53 @@ class _Bg3RandomizerScreenState extends State<Bg3RandomizerScreen> {
     );
   }
 
-  Widget _buildResultTile(String title, String? value, VoidCallback? onReroll, {VoidCallback? onInfo}) {
+  Widget _buildResultTile(String title, String? value, String optionKey, {VoidCallback? onInfo}) {
     if (value == null) return const SizedBox.shrink();
-    return GestureDetector(
-      onTap: onReroll,
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16.0, top: 12.0, bottom: 12.0, right: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      value,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Color(0xFFEAE0D5)),
-                    ),
-                  ],
+
+    final isFrozen = _frozenOptions.contains(optionKey);
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: GestureDetector(
+        key: ValueKey<String>(value), // Важно для работы AnimatedSwitcher
+        onTap: () => _reroll(optionKey),
+        child: Card(
+          margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16.0, top: 12.0, bottom: 12.0, right: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (onInfo != null)
+                  IconButton(
+                    icon: const Icon(Icons.info_outline, color: Color.fromRGBO(212, 175, 55, 0.7)),
+                    onPressed: onInfo,
+                  ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        value,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Color(0xFFEAE0D5)),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (onInfo != null)
                 IconButton(
-                  icon: Icon(Icons.info_outline, color: const Color(0xFFD4AF37).withOpacity(0.7)),
-                  onPressed: onInfo,
+                  icon: Icon(isFrozen ? Icons.lock : Icons.lock_open, color: isFrozen ? const Color(0xFFD4AF37) : Colors.grey),
+                  onPressed: () => _toggleFreeze(optionKey),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -162,7 +138,15 @@ class _Bg3RandomizerScreenState extends State<Bg3RandomizerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🎲 Рандомайзер Персонажа BG3', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('🎲 Рандомайзер Персонажа BG3'),
+        actions: [
+          if (_currentCharacter != null)
+            IconButton(
+              icon: const Icon(Icons.copy),
+              onPressed: _copyToClipboard,
+              tooltip: 'Скопировать персонажа',
+            ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -198,25 +182,25 @@ class _Bg3RandomizerScreenState extends State<Bg3RandomizerScreen> {
                   _buildResultTile(
                     'Раса/Подраса',
                     '${_currentCharacter!.race}${_currentCharacter!.subRace != '(Нет Подрасы)' ? ' - ${_currentCharacter!.subRace}' : ''}',
-                    _rerollRace,
+                    'race',
                     onInfo: () => _showDescription(_currentCharacter!.race, allBg3Data.raceDescriptions[_currentCharacter!.race]),
                   ),
                 _buildResultTile(
                   'Класс/Подкласс',
                   '${_currentCharacter!.charClass} - ${_currentCharacter!.subClass}',
-                  _rerollClass,
+                  'class',
                   onInfo: () => _showDescription(_currentCharacter!.charClass, allBg3Data.classDescriptions[_currentCharacter!.charClass]),
                 ),
                 _buildResultTile(
                   'Предыстория',
                   _currentCharacter!.background,
-                  _rerollBackground,
+                  'background',
                   onInfo: () => _showDescription(_currentCharacter!.background, allBg3Data.backgroundDescriptions[_currentCharacter!.background]),
                 ),
                 _buildResultTile(
                   'Мировоззрение',
                   _currentCharacter!.alignment,
-                  _rerollAlignment,
+                  'alignment',
                   onInfo: () => _showDescription(_currentCharacter!.alignment!, allBg3Data.alignmentDescriptions[_currentCharacter!.alignment!]),
                 ),
                 _buildSectionHeader('🎯 Ключевые Выборы'),
@@ -224,28 +208,28 @@ class _Bg3RandomizerScreenState extends State<Bg3RandomizerScreen> {
                   _buildResultTile(
                     'Происхождение',
                     _currentCharacter!.origin,
-                    null,
+                    'origin',
                     onInfo: () => _showDescription(_currentCharacter!.origin!, allBg3Data.originDescriptions[_currentCharacter!.origin!]),
                   ),
                 if (_currentCharacter!.deity != null)
                   _buildResultTile(
                     'Божество',
                     _currentCharacter!.deity,
-                    _rerollDeity,
+                    'deity',
                     onInfo: () => _showDescription(_currentCharacter!.deity!, allBg3Data.deityDescriptions[_currentCharacter!.deity!]),
                   ),
                 if (_currentCharacter!.warlockPact != null)
                   _buildResultTile(
                     'Договор колдуна',
                     _currentCharacter!.warlockPact,
-                    _rerollWarlockPact,
+                    'warlockPact',
                     onInfo: () => _showDescription(_currentCharacter!.warlockPact!, allBg3Data.warlockPactDescriptions[_currentCharacter!.warlockPact!]),
                   ),
                 if (_currentCharacter!.fightingStyle != null)
                   _buildResultTile(
                     'Боевой Стиль',
                     _currentCharacter!.fightingStyle,
-                    _rerollFightingStyle,
+                    'fightingStyle',
                     onInfo: () => _showDescription(_currentCharacter!.fightingStyle!, allBg3Data.fightingStyleDescriptions[_currentCharacter!.fightingStyle!]),
                   ),
                 const SizedBox(height: 20),
@@ -269,7 +253,7 @@ class _Bg3RandomizerScreenState extends State<Bg3RandomizerScreen> {
                     padding: EdgeInsets.all(12.0),
                     child: Text(
                       'СГЕНЕРИРОВАТЬ ПЕРСОНАЖА',
-                      style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
